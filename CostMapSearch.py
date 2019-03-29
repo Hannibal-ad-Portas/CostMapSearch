@@ -2,20 +2,22 @@
 # This program generates a path using several search algorithims
 
 import sys, getopt
+from Graph import *
+from Grid2Graph import *
+from BFS import *
 
 def main (argv):
-    method = ''
-    infile = ''
-    rstart
-    cstart
-    rend
-    cend
-    outfile = ''
+    grid = grid2Graph ('grid.grd')
+    graph = GridGraph (grid[0], grid[1], grid[2])
+    graph.setNeighbors()
+    start = (0,0)
+    goal = (1,0)
 
-    try:
-        opts, args = getopt.getopt(argv, "", [])
-    except getopt.GetoptError:
-        print ('Error with inputs')
-        sys.exit(2)
-    for :w
-    hj
+    path = breadthFirstS (graph, start, goal)
+
+    print ("Printing Path to Goal")
+    print (path)
+    #with open('path.txt', 'r') as outfile:
+        #outfile.print (path)
+
+main(1)
