@@ -16,6 +16,7 @@ class GridGraph:
         self.width  = width
         self.height = height
         self.nodes = []
+        self.costs = costs
         for i, row in enumerate(costs):
             for j, col in enumerate(costs[i]):
                 self.nodes.append(Node(i, j, costs[i][j]))
@@ -23,12 +24,14 @@ class GridGraph:
     # This method finds all the neighbors of each node and removes the walls
     def setNeighbors (self):
         for node in self.nodes:
-            rowP = node.position[0] + 1
-            rowM = node.position[0] - 1
-            colP = node.position[1] + 1
-            colM = node.position[1] - 1
+            row = node.position[0]
+            col = node.position[1]
+            rowP = row + 1
+            rowM = row - 1
+            colP = col + 1
+            colM = col - 1
 
-            # if the value is oob remove it
+            # if the value is out of bounds remove it
             if (rowP < 0 or rowP >= self.width):
                 rowP = None
             if (rowM < 0 or rowM >= self.width):
@@ -39,20 +42,22 @@ class GridGraph:
                 colM = None
 
             # find matching nodes that aren't walls
-            tempNode = (next((node for node in self.nodes if node.position == [rowP, node.position[1]]), None))
-            if tempNode != None:
-                if tempNode.value != 0:
-                    node.neighbors.append(tempNode.position)
-            tempNode = (next((node for node in self.nodes if node.position == [rowM, node.position[1]]), None))
-            if tempNode != None:
-                if tempNode.value != 0:
-                    node.neighbors.append(tempNode.position)
-            tempNode = (next((node for node in self.nodes if node.position == [node.position[0], colP]), None))
-            if tempNode != None:
-                if tempNode.value != 0:
-                    node.neighbors.append(tempNode.position)
-            tempNode = (next((node for node in self.nodes if node.position == [node.position[0], colM]), None))
-            if tempNode != None:
-                if tempNode.value != 0:
-                    node.neighbors.append(tempNode.position)
+            # Left
+            if rowM != None:
+                if self.costs[rowM][col] > 0:
+                    node.neighbors.append((rowM, col))
 
+            # Right
+            if rowP != None:
+                if self.costs[rowP][col] > 0:
+                    node.neighbors.append((rowP, col))
+
+            # Up
+            if colM != None:
+                if self.costs[row][colM] > 0:
+                    node.neighbors.append((row, colM))
+
+            # Down
+            if colP != None:
+                if self.costs[row][colP] > 0:
+                    node.neighbors.append((row, colP))

@@ -4,8 +4,6 @@ from queue import *
 from Graph import *
 
 def breadthFirstS (Graph, start, goal):
-    print ("Goal Position")
-    print (goal)
     frontier = Queue()
     startNode = (next((node for node in Graph.nodes if node.position == [start[0], start[1]]), None))
     frontier.put(startNode)

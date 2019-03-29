@@ -11,7 +11,7 @@ def main (argv):
     graph = GridGraph (grid[0], grid[1], grid[2])
     graph.setNeighbors()
     start = (0,0)
-    goal = (1,0)
+    goal = (9,9)
 
     path = breadthFirstS (graph, start, goal)
 
