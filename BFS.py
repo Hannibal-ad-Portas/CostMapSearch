@@ -8,7 +8,6 @@ def breadthFirstS (Graph, start, goal):
     startNode = (next((node for node in Graph.nodes if node.position == [start[0], start[1]]), None))
     frontier.put(startNode)
     path = []
-    path.append(startNode.position)
 
     while not frontier.empty():
         current = frontier.get()
@@ -16,12 +15,23 @@ def breadthFirstS (Graph, start, goal):
         if (current.position[0] == goal[0] and current.position[1] == goal[1]):
             print ("Found goal at")
             print (current.position)
+            # call function add parents to path
+            path.append(current.position)
+            currentParent = current.position
+            parentNode = current
+            while parentNode != startNode:
+                # Get the position of the parent of each node in the path
+                parentNode = parentNode.parent
+                currentParent = parentNode.position
+                print (currentParent)
+                path.append(currentParent)
             return path
 
         for neighbor in current.neighbors:
             neighborNode = (next((node for node in Graph.nodes if node.position == [neighbor[0], neighbor[1]]), None))
             if neighborNode != None:
-                if neighborNode.position not in path:
-                    path.append(neighborNode.position)
+                if neighborNode.parent == None:
+                    # set parent of the node
+                    neighborNode.setParent(current)
+                    #path.append(neighborNode.position)
                     frontier.put(neighborNode)
-                    neighborNode.setParent(current.position)
