@@ -3,13 +3,21 @@
 class Node:
     parent = None
     def __init__(self, row, col, value):
-        self.position = [row, col,]
+        self.position = (row, col)
         self.value = value
+        self.cost = 1 - value
         self.parent = None
         self.neighbors = []
+        self.visited = False
 
     def setParent (self, parentPosition):
         self.parent = parentPosition
+
+    def __lt__(self, other):
+        return self.position < other.position
+
+    def __eq__(self, other):
+        return (self.position == other.position)
 
 class GridGraph:
     def __init__(self, width, height, costs):
@@ -45,19 +53,19 @@ class GridGraph:
             # Left
             if rowM != None:
                 if self.costs[rowM][col] > 0:
-                    node.neighbors.append((rowM, col))
+                    node.neighbors.append([rowM, col])
 
             # Right
             if rowP != None:
                 if self.costs[rowP][col] > 0:
-                    node.neighbors.append((rowP, col))
+                    node.neighbors.append([rowP, col])
 
             # Up
             if colM != None:
                 if self.costs[row][colM] > 0:
-                    node.neighbors.append((row, colM))
+                    node.neighbors.append([row, colM])
 
             # Down
             if colP != None:
                 if self.costs[row][colP] > 0:
-                    node.neighbors.append((row, colP))
+                    node.neighbors.append([row, colP])

@@ -1,6 +1,6 @@
 function [] = ImgToGrid(fnameImg, fnameGrid)
 data = imread(fnameImg);
-data = rgb2gray(data);
+#data = rgb2gray(data);
 ddata = double (data);
 fp = fopen(fnameGrid, 'w');
 [nrRows, nrCols] = size(ddata);
