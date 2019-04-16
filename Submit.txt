@@ -1,0 +1,299 @@
+#!/usr/bin/python3
+# This program generates a path using one of several search algorithims
+__author__ = "James Conroy"
+
+import sys
+from Graph import *
+from Grid2Graph import *
+from BFS import *
+from DFS import *
+from AStar import *
+
+def usage (argv):
+    print("Usage:")
+    print('\t',str(sys.argv[0]), "method, grid.txt, rstart. cstart, rend, cend, path.txt")
+    print("Methods:")
+    print("\tBFS\n\tDFS\n\tAStarZero\n\tAStarManhattan\n\tAStarEuclidean")
+
+def main (argv):
+
+    if (len(sys.argv) != 8):
+        print("You have the wrong number of arguments")
+        usage(argv)
+        return
+
+    method = str(sys.argv[1])
+    inFile = str(sys.argv[2])
+    rstart = int(sys.argv[3])
+    cstart = int(sys.argv[4])
+    rend = int(sys.argv[5])
+    cend = int(sys.argv[6])
+    outFile = str(sys.argv[7])
+
+    grid = grid2Graph (inFile)
+    graph = GridGraph (grid[0], grid[1], grid[2])
+    graph.setNeighbors()
+    start = (rstart, cstart)
+    goal = (rend, cend)
+
+    if (method == "DFS"):
+        path = depthFirstS (graph, start, goal)
+    elif (method == "BFS"):
+        path = breadthFirstS (graph, start, goal)
+    elif (method == "AStarZero"):
+        path = aStar (graph, start, goal, "zero")
+    elif (method == "AStarManhattan"):
+        path = aStar (graph, start, goal, "manhattan")
+    elif (method == "AStarEuclidean"):
+        path = aStar (graph, start, goal, "euclidean")
+    else:
+        print("Method not Reconised")
+        usage(argv)
+        return
+
+    if path:
+        print ("Printing Path to Goal")
+        with open(outFile, 'w') as pathFile:
+            for p, point in enumerate(path):
+                pathFile.write(' '.join([str(i) for i in path[p]]))
+                pathFile.write('\n')
+    else:
+        print ("No path found")
+
+main(1)
+# This function takes a .grd file and creates a graph object out of it.
+# The function takes the file, ignores the first line, and places the move costs
+# into a list of lists of the same height and width as the image the .grd file was
+# created from
+
+from Graph import *
+
+def grid2Graph (gridFile):
+    costs = []
+    with open(gridFile, 'r') as grid:
+        # get the contents of the first line and strip trailing new line character
+        firstLine = grid.readline().strip()
+        for line in grid:
+            costs.append(line.strip())
+
+    for i, item in enumerate(costs):
+        costs[i] = item.split(' ')
+        for j, num in enumerate(costs[i]):
+            costs[i][j] = float(costs[i][j])
+
+    rows, cols = firstLine.split(' ')
+    rows = int(rows)
+    cols = int(cols)
+
+    return rows, cols, costs
+# This file contains a graph class which is a class containing nodes
+
+class Node:
+    parent = None
+    def __init__(self, row, col, value):
+        self.position = (row, col)
+        self.value = value
+        self.cost = 1 - value
+        self.parent = None
+        self.neighbors = []
+        self.visited = False
+
+    def setParent (self, parentPosition):
+        self.parent = parentPosition
+
+    def __lt__(self, other):
+        return self.position < other.position
+
+    def __eq__(self, other):
+        return (self.position == other.position)
+
+class GridGraph:
+    def __init__(self, width, height, costs):
+        self.width  = width
+        self.height = height
+        self.nodes = []
+        self.costs = costs
+        for i, row in enumerate(costs):
+            for j, col in enumerate(costs[i]):
+                self.nodes.append(Node(i, j, costs[i][j]))
+
+    # This method finds all the neighbors of each node and removes the walls
+    def setNeighbors (self):
+        for node in self.nodes:
+            row = node.position[0]
+            col = node.position[1]
+            rowP = row + 1
+            rowM = row - 1
+            colP = col + 1
+            colM = col - 1
+
+            # if the value is out of bounds remove it
+            if (rowP < 0 or rowP >= self.width):
+                rowP = None
+            if (rowM < 0 or rowM >= self.width):
+                rowM = None
+            if (colP < 0 or colP >= self.height):
+                colP = None
+            if (colM < 0 or colM >= self.height):
+                colM = None
+
+            # find matching nodes that aren't walls
+            # Left
+            if rowM != None:
+                if self.costs[rowM][col] > 0:
+                    node.neighbors.append([rowM, col])
+
+            # Right
+            if rowP != None:
+                if self.costs[rowP][col] > 0:
+                    node.neighbors.append([rowP, col])
+
+            # Up
+            if colM != None:
+                if self.costs[row][colM] > 0:
+                    node.neighbors.append([row, colM])
+
+            # Down
+            if colP != None:
+                if self.costs[row][colP] > 0:
+                    node.neighbors.append([row, colP])
+import heapq
+
+class PriorityQueue:
+    def __init__(self):
+        self.elements = []
+
+    def empty(self):
+        return len(self.elements) == 0
+
+    def put(self, item, priority):
+        heapq.heappush(self.elements, (priority, item))
+
+    def get(self):
+        return heapq.heappop(self.elements)[1]
+import math
+import time
+from PriorityQueue import *
+from Graph import *
+
+def heuristic(a, b, heur):
+    D = 1 #base cost to move to a square from a neighbor
+    (x1, y1) = a
+    (x2, y2) = b
+
+    if (heur == "manhattan"):
+        dx = abs(x1 - x2)
+        dy = abs(y1 - y2)
+        return D * (dx + dy)
+
+    if (heur == "euclidean"):
+        dx = abs(x1 - x2)
+        dy = abs(y1 - y2)
+        return D * math.sqrt(dx * dx + dy * dy)
+
+    if (heur == "zero"):
+        return 0
+
+def aStar (Graph, start, goal, heur):
+    frontier = PriorityQueue();
+    startNode = (next((node for node in Graph.nodes if node.position == start), None))
+    frontier.put(startNode, 0)
+    visitedNodes = []
+    currentCost = {}
+    currentCost[start] = 0
+    path = []
+
+    while not frontier.empty():
+        current = frontier.get()
+        print("Examining node at:", current.position)
+
+        if current.position == goal:
+            parentNode = current
+            while parentNode != startNode:
+                path.append(parentNode.position)
+                parentNode = parentNode.parent
+            path.reverse()
+            return path
+
+        for i, neighbor in enumerate(current.neighbors):
+            position = tuple(current.neighbors[i])
+            neighborNode = (next((node for node in Graph.nodes if node.position == position), None))
+            if neighborNode:
+                newCost = currentCost[tuple(current.position)] + neighborNode.cost
+                neighborPosition = tuple(neighborNode.position)
+                if neighborPosition not in currentCost or newCost < currentCost[neighborPosition]:
+                    currentCost[neighborPosition] = newCost
+                    dist2Goal = heuristic(goal, neighbor, heur)
+                    print ("Heuristic: ", dist2Goal)
+                    print ("Cost: ", newCost)
+                    priority = newCost + dist2Goal
+                    print("Priority:", priority)
+                    frontier.put(neighborNode, priority)
+                    neighborNode.setParent(current)
+        time.sleep(.25)
+# This is a non recursive implementation of a Depth First Search
+
+from queue import *
+from Graph import *
+
+def depthFirstS (Graph, start, goal):
+    frontier = []
+    startNode = (next((node for node in Graph.nodes if node.position == start), None))
+    frontier.append(startNode)
+    path = []
+
+    while frontier:
+        current = frontier.pop()
+
+        # Early Exit implementation
+        if (current.position == goal):
+            # add parents to path
+            parentNode = current
+            while parentNode != startNode:
+                path.append(parentNode.position)
+                parentNode = parentNode.parent
+            path.reverse()
+            return path
+
+        # check to see if the node has been visited
+        if current.visited == False:
+            current.visited = True
+            # set parent of the node
+            for neighbor in current.neighbors:
+                position = tuple(neighbor)
+                neighborNode = (next((node for node in Graph.nodes if node.position == position ), None))
+                if neighborNode:
+                    if (neighborNode.visited == False):
+                        neighborNode.setParent(current)
+                        frontier.append(neighborNode)
+# This is an implementation of breath first search
+
+from queue import *
+from Graph import *
+
+def breadthFirstS (Graph, start, goal):
+    frontier = Queue()
+    startNode = (next((node for node in Graph.nodes if node.position == start), None))
+    frontier.put(startNode)
+    path = []
+
+    while not frontier.empty():
+        current = frontier.get()
+
+        if current.position == goal:
+            parentNode = current
+            while parentNode != startNode:
+                path.append(parentNode.position)
+                parentNode = parentNode.parent
+            path.reverse()
+            return path
+
+        for i, neighbor in enumerate(current.neighbors):
+            position = tuple(current.neighbors[i])
+            neighborNode = (next((node for node in Graph.nodes if node.position == position), None))
+            if neighborNode:
+                if not neighborNode.parent:
+                    # set parent of the node
+                    neighborNode.setParent(current)
+                    #path.append(neighborNode.position)
+                    frontier.put(neighborNode)
